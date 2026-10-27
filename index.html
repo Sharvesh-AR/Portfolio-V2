@@ -342,15 +342,36 @@ h1 span { display: block; }
   var R = document.documentElement, cd = document.getElementById('cardD');
   var toast = document.getElementById('toast'), hint = document.getElementById('hint'), btns = document.querySelectorAll('.tg button'), tt, ft;
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var gyroOn = false, gyroT = null, gBase = null, gAsked = false;
   var cur = { x: 0, y: 0 }, tgt = null, drag = null, moved = false, t0 = performance.now(), pokes = 0, lastMouse = null;
 
-  function buzz(n) { try { if (navigator.vibrate) navigator.vibrate(n); } catch (e) {} }
+  /* haptics: Android/Chrome/Firefox use vibrate(); iPhone Safari has no vibrate(), so a hidden iOS "switch" toggle gives the system tick (iOS 17.4+) */
+  var hasVib = typeof navigator.vibrate === 'function';
+  var tick = (function () {
+    if (hasVib) return null;
+    try {
+      var l = document.createElement('label'); l.setAttribute('aria-hidden', 'true');
+      l.style.cssText = 'position:fixed;left:8px;bottom:8px;width:1px;height:1px;opacity:.01;pointer-events:none;overflow:hidden;z-index:-1';
+      var i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); i.tabIndex = -1;
+      l.appendChild(i); document.body.appendChild(l); return l;
+    } catch (x) { return null; }
+  })();
+  function buzz(n) {
+    try {
+      if (hasVib) navigator.vibrate(n);
+      else if (tick) tick.click();
+    } catch (x) {}
+  }
+  /* a light tick on every touch (touchend counts as a real user gesture on iOS and Android) */
+  document.addEventListener('touchend', function () { buzz(8); }, { passive: true });
   function say(m) { toast.textContent = m; toast.classList.add('on'); clearTimeout(tt); tt = setTimeout(function () { toast.classList.remove('on'); }, 2000); }
   function restart(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 
-  function set(s) {
+  var turns = 0; /* half-turns of the card; the sign is the direction it spins */
+  function set(s, dir) {
     if (s === R.getAttribute('data-side')) return;
-    cd.classList.add('flipping'); cur.x = cur.y = 0; tgt = null;
+    turns += dir || (s === 'per' ? -1 : 1);
+    cd.classList.add('flipping'); cd.style.setProperty('--f', turns); cur.x = cur.y = 0; tgt = null;
     cd.style.setProperty('--rx', '0deg'); cd.style.setProperty('--ry', '0deg');
     clearTimeout(ft); ft = setTimeout(function () { cd.classList.remove('flipping'); }, 1100);
     R.setAttribute('data-side', s);
@@ -406,8 +427,8 @@ h1 span { display: block; }
   function end(e) {
     if (!drag || e.pointerId !== drag.id) return;
     var dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
-    drag = null; tgt = (lastMouse && !reduce) ? lastMouse : null;
-    if (e.type === 'pointerup' && moved && Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy)) { moved = false; set(other()); }
+    drag = null; tgt = gyroOn ? gyroT : ((lastMouse && !reduce) ? lastMouse : null);
+    if (e.type === 'pointerup' && moved && Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy)) { set(other(), dx < 0 ? -1 : 1); }
     setTimeout(function () { moved = false; }, 0);
   }
   cd.addEventListener('pointerup', end); cd.addEventListener('pointercancel', end);
@@ -416,9 +437,36 @@ h1 span { display: block; }
   document.addEventListener('pointermove', function (e) {
     if (e.pointerType !== 'mouse' || reduce) return;
     lastMouse = { y: (e.clientX / innerWidth - .5) * 28, x: (.5 - e.clientY / innerHeight) * 22 };
-    if (!drag) tgt = lastMouse;
+    if (!drag && !gyroOn) tgt = lastMouse;
   });
   document.documentElement.addEventListener('mouseleave', function () { lastMouse = null; if (!drag) tgt = null; });
+
+  /* gyro: the card follows the phone's movement */
+  function onOrient(e) {
+    if (e.beta == null || e.gamma == null || reduce) return;
+    var ang = (screen.orientation && typeof screen.orientation.angle === 'number') ? screen.orientation.angle : (window.orientation || 0);
+    ang = ((ang % 360) + 360) % 360;
+    var B = e.beta, G = e.gamma;                      /* map sensor axes to the screen when the phone is rotated */
+    if (ang === 90) { B = -e.gamma; G = e.beta; } else if (ang === 270) { B = e.gamma; G = -e.beta; } else if (ang === 180) { B = -e.beta; G = -e.gamma; }
+    if (!gBase) gBase = { b: B, g: G };
+    gBase.b += (B - gBase.b) * 0.004; gBase.g += (G - gBase.g) * 0.004; /* slowly re-centres to how you hold the phone */
+    var cl = function (v, m) { return Math.max(-m, Math.min(m, v)); };
+    gyroOn = true;
+    gyroT = { x: cl((B - gBase.b) * 0.6, 18), y: cl((G - gBase.g) * 0.85, 26) };
+    if (!drag) tgt = gyroT;
+  }
+  window.addEventListener('orientationchange', function () { gBase = null; });
+  function startGyro() {
+    if (gAsked || reduce || !window.DeviceOrientationEvent) return;
+    gAsked = true;
+    try {
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(function (r) { if (r === 'granted') window.addEventListener('deviceorientation', onOrient); }, function () { gAsked = false; });
+      } else { window.addEventListener('deviceorientation', onOrient); }
+    } catch (e) { gAsked = false; }
+  }
+  if (!(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function')) startGyro();
+  ['touchend', 'click'].forEach(function (n) { document.addEventListener(n, startGyro, { passive: true }); });
 
   /* smooth springy tilt + idle sway so it always feels 3D */
   function frame(t) {
