@@ -1,6 +1,6 @@
 # AR Sharvesh · Portfolio Card
 
-A single-file, flip-card portfolio with a Clash-of-Clans vibe. One side is **Professional**, the other is **Personal**. Built to feel good on a phone, and it never scrolls.
+A flip-card portfolio with a Clash-of-Clans vibe. One side is **Professional**, the other is **Personal**. Built to feel good on a phone, and it never scrolls.
 
 ## What's inside
 
@@ -17,22 +17,33 @@ A single-file, flip-card portfolio with a Clash-of-Clans vibe. One side is **Pro
 No build, no install, no dependencies.
 
 ```
-open index-v3.html
+open index.html
 ```
 
-Double-click the file, or drop it on any static host.
+Double-click `index.html`, or drop the whole folder on any static host (Vercel, Netlify, GitHub Pages).
+
+## Project structure
+
+```
+index.html                markup only
+css/style.css             all styles
+js/main.js                flip, tilt, gyro, haptics, projects sheet, card edge
+assets/fonts/             Clash display font (400, 700)
+assets/img/               builder.webp (front), barbarian-king.webp (back)
+favicon.svg
+```
 
 ## Make it yours
 
-Everything lives in one file, so search and edit.
+Markup is in `index.html`, styles in `css/style.css`, behaviour in `js/main.js`.
 
 | Want to change | Where to look |
 | --- | --- |
-| Name, role, college, links | the `<div class="hd">` and `<div class="info">` blocks |
-| Progress text and percent | `.pb` (text) and `.pb i` width in the CSS |
-| Tech logos | the `<div class="ft">` row. Each `.bd` has `--b` (colour) and a `title` |
-| Accent colours | the CSS variables at the top, `--ca` is the main accent |
-| Character lines on tap | the `lines` object in the script |
+| Name, role, college, links | `index.html`: the `<div class="hd">` and `<div class="info">` blocks |
+| Character pictures | replace the files in `assets/img/` |
+| Tech logos | `index.html`: the `<div class="ft">` row. Each `.bd` has `--b` (brand colour on hover) and a `title` |
+| Accent colours | `css/style.css`: the variables at the top, `--ca` is the main accent |
+| Character lines on tap | `js/main.js`: the `lines` object |
 
 ## Layout rules (so it stays tidy)
 
