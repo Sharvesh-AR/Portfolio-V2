@@ -577,11 +577,25 @@ body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-event
 .dk .ln { border-bottom-style: solid; border-bottom-width: 1px; }
 .dk .ln small { opacity: .9; }
 
-/* 5. character: accent spotlight + slow orbit ring instead of a flat disc */
-.dk .av::before { background: radial-gradient(circle, color-mix(in srgb, var(--ca) 34%, transparent) 0%, color-mix(in srgb, var(--ca) 10%, transparent) 55%, transparent 72%); }
-.dk .av::after { content: ""; position: absolute; left: 50%; top: 54%; width: min(212px, 70%); aspect-ratio: 1; border-radius: 50%; translate: -50% -50%;
-  border: 1.5px dashed color-mix(in srgb, var(--ca) 55%, transparent); animation: spin 40s linear infinite; pointer-events: none; }
-@media (max-width: 760px) { .dk .av::after { width: min(150px, 60%); } }
+/* 5. character: no disc, just a soft contact shadow so it stands on the card */
+.dk .av::before { left: 50%; top: auto; bottom: 2.5%; width: 58%; height: 16px; aspect-ratio: auto; translate: -50% 0;
+  background: radial-gradient(closest-side, rgba(0,0,0,.55), transparent); transform: translateX(calc(var(--px, 0) * -8px));
+  animation: shb 3.4s ease-in-out infinite alternate; }
+.dk .back .av::before { background: radial-gradient(closest-side, rgba(40,35,10,.32), transparent); }
+@keyframes shb { to { scale: .86; opacity: .7; } }
+.dk .av::after { content: none; }
+@media (max-width: 760px) { .dk .av::before { width: 52%; } }
+
+/* 5b. real 3D: the card has thickness (stacked edge layers, dark > gold > cream) */
+.card.dk { --th: 12px; }
+.dk .front { transform: translateZ(calc(var(--th) / 2)); }
+.dk .back { transform: rotateY(180deg) translateZ(calc(var(--th) / 2)); }
+.card .edge { position: absolute; inset: 0; border-radius: 26px; pointer-events: none; background: var(--ec); transform: translateZ(var(--z)); }
+
+/* 5c. depth parallax: character floats above, text sits deeper */
+.dk .av img { transform: translate(calc(var(--px, 0) * 18px), calc(var(--py, 0) * 10px)); }
+.dk .info { transform: translate(calc(var(--px, 0) * -3px), calc(var(--py, 0) * -2px)); }
+.dk .ft .bd { translate: calc(var(--px, 0) * -2px) 0; }
 
 /* 6. tech + social tiles: one calm monochrome set, brand colour on hover / tap */
 .dk .ft { background: color-mix(in srgb, var(--cf) 4%, transparent); border-top-width: 1px; }
@@ -613,6 +627,16 @@ body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-event
     if (e.pointerType !== 'mouse') return;
     R.style.setProperty('--mx', e.clientX + 'px'); R.style.setProperty('--my', e.clientY + 'px');
   });
+  /* build the card's edge: 9 thin slices between front and back */
+  (function () {
+    var n = 9, th = 12, cols = ['#17150e', '#17150e', '#3a2c06', '#a87a05', '#e0aa12', '#a87a05', '#3a2c06', '#cfc9b2', '#ece8d4'];
+    for (var i = 0; i < n; i++) {
+      var e = document.createElement('i'); e.className = 'edge'; e.setAttribute('aria-hidden', 'true');
+      e.style.setProperty('--z', (th / 2 - .6 - i * (th - 1.2) / (n - 1)).toFixed(2) + 'px');
+      e.style.setProperty('--ec', cols[i]);
+      cd.insertBefore(e, cd.firstChild);
+    }
+  })();
   /* floor shadow drifts opposite to the card's tilt */
   (function loop() { requestAnimationFrame(loop); var ry = parseFloat(cd.style.getPropertyValue('--ry')) || 0; st.style.setProperty('--sx', (-ry * 2.2).toFixed(1)); })();
 })();
