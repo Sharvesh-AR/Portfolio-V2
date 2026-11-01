@@ -551,5 +551,71 @@ a.pj:hover { border-color: var(--ca); transform: translateY(-2px); }
   });
 })();
 </script>
+<!-- ===== v4 upgrade: cleaner, cooler (all additive, delete this block to revert) ===== -->
+<style>
+/* 1. background: dot grid that lights up around the cursor */
+body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(color-mix(in srgb, var(--fg) 30%, transparent) 1.1px, transparent 1.6px); background-size: 22px 22px;
+  -webkit-mask: radial-gradient(circle 260px at var(--mx, 50%) var(--my, 45%), #000 0%, rgba(0,0,0,.35) 45%, rgba(0,0,0,.08) 100%);
+          mask: radial-gradient(circle 260px at var(--mx, 50%) var(--my, 45%), #000 0%, rgba(0,0,0,.35) 45%, rgba(0,0,0,.08) 100%); }
+@media (max-width: 760px) { body::after { -webkit-mask: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(0,0,0,.5), transparent); mask: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(0,0,0,.5), transparent); } }
+
+/* 2. foil glare that slides across the card as it tilts */
+.dk .face::after { content: ""; position: absolute; inset: 0; z-index: 5; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,.13) 44%, rgba(255,255,255,.04) 50%, transparent 62%);
+  background-size: 260% 260%; background-position: calc(50% + var(--px, 0) * 30%) calc(50% + var(--py, 0) * 30%); }
+/* thin accent rim, brighter on the corners */
+.dk .face::before { content: ""; position: absolute; inset: 0; z-index: 6; border-radius: inherit; pointer-events: none; padding: 1.5px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ca) 85%, transparent), transparent 30%, transparent 70%, color-mix(in srgb, var(--ca) 60%, transparent));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+
+/* 3. header band: soft top light + crisp bottom edge */
+.dk .hd { background: linear-gradient(180deg, color-mix(in srgb, var(--ca), #fff 16%), var(--ca) 70%); box-shadow: inset 0 -1px 0 rgba(0,0,0,.22); }
+
+/* 4. info rows: quiet solid hairlines instead of dashes */
+.dk .ln { border-bottom-style: solid; border-bottom-width: 1px; }
+.dk .ln small { opacity: .9; }
+
+/* 5. character: accent spotlight + slow orbit ring instead of a flat disc */
+.dk .av::before { background: radial-gradient(circle, color-mix(in srgb, var(--ca) 34%, transparent) 0%, color-mix(in srgb, var(--ca) 10%, transparent) 55%, transparent 72%); }
+.dk .av::after { content: ""; position: absolute; left: 50%; top: 54%; width: min(212px, 70%); aspect-ratio: 1; border-radius: 50%; translate: -50% -50%;
+  border: 1.5px dashed color-mix(in srgb, var(--ca) 55%, transparent); animation: spin 40s linear infinite; pointer-events: none; }
+@media (max-width: 760px) { .dk .av::after { width: min(150px, 60%); } }
+
+/* 6. tech + social tiles: one calm monochrome set, brand colour on hover / tap */
+.dk .ft { background: color-mix(in srgb, var(--cf) 4%, transparent); border-top-width: 1px; }
+.dk .ft .bd { background: color-mix(in srgb, var(--cf) 6%, transparent); color: var(--cf); box-shadow: inset 0 0 0 1px var(--cl);
+  transition: transform .35s var(--e), background-color .25s ease, color .25s ease, box-shadow .25s ease; }
+.dk .ft .bd:hover, .dk .ft .bd:focus-visible, .dk .ft .bd.pop { background: var(--b); color: var(--bf); box-shadow: 0 10px 22px -8px var(--b), inset 0 0 0 1px rgba(255,255,255,.18); outline: none; }
+.dk .ft .bd:active { box-shadow: inset 0 0 0 1px var(--cl); }
+
+/* 7. staggered entrance: rows, then tiles */
+@keyframes rise { from { opacity: 0; translate: 0 10px; } }
+.dk .info > * { animation: rise .6s var(--e) backwards; }
+.dk .info > :nth-child(1) { animation-delay: .45s; } .dk .info > :nth-child(2) { animation-delay: .53s; } .dk .info > :nth-child(3) { animation-delay: .61s; } .dk .info > :nth-child(4) { animation-delay: .69s; }
+.dk .ft > .bd { animation: rise .5s var(--e) backwards; }
+.dk .ft > :nth-child(1) { animation-delay: .7s; } .dk .ft > :nth-child(2) { animation-delay: .74s; } .dk .ft > :nth-child(3) { animation-delay: .78s; } .dk .ft > :nth-child(4) { animation-delay: .82s; } .dk .ft > :nth-child(5) { animation-delay: .86s; }
+.dk .ft > :nth-child(6) { animation-delay: .9s; } .dk .ft > :nth-child(7) { animation-delay: .94s; } .dk .ft > :nth-child(8) { animation-delay: .98s; } .dk .ft > :nth-child(9) { animation-delay: 1.02s; } .dk .ft > :nth-child(10) { animation-delay: 1.06s; }
+.dk .ft > .bd.pop { animation: pop .55s var(--e); }
+
+/* 8. a soft shadow on the "floor" that follows the tilt */
+.stage { position: relative; }
+.stage::after { content: ""; position: absolute; left: 50%; bottom: max(6%, 30px); width: min(60vw, 520px); height: 34px; border-radius: 50%; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(0,0,0,.28), transparent); filter: blur(6px); translate: calc(-50% + var(--sx, 0) * 1px) 0; }
+@media (min-width: 761px) { .stage::after { bottom: calc(50% - 265px); } }
+@media (max-width: 760px) { .stage::after { display: none; } }
+</style>
+<script>
+(function () {
+  var R = document.documentElement, cd = document.getElementById('cardD'), st = document.getElementById('stage');
+  document.addEventListener('pointermove', function (e) {
+    if (e.pointerType !== 'mouse') return;
+    R.style.setProperty('--mx', e.clientX + 'px'); R.style.setProperty('--my', e.clientY + 'px');
+  });
+  /* floor shadow drifts opposite to the card's tilt */
+  (function loop() { requestAnimationFrame(loop); var ry = parseFloat(cd.style.getPropertyValue('--ry')) || 0; st.style.setProperty('--sx', (-ry * 2.2).toFixed(1)); })();
+})();
+</script>
 </body>
 </html>
